@@ -29,19 +29,38 @@ def all_articles_blob() -> str:
 
 @lru_cache
 def expanded_help_center_blob() -> str:
-    """Expanded help center for Question 2."""
+    """Build the expanded help center efficiently for Question 2."""
     base = all_articles_blob()
+
     filler = (
         "## Internal routing note\n"
         "Carrier pickup windows, warehouse bin labels, and CS macro catalog. "
         "Does not change customer policy unless an article id is cited.\n"
     )
+
     chunks = [base]
+    total_tokens = count_tokens(base)
     i = 0
-    while count_tokens("\n".join(chunks)) < 210_000:
+
+    while total_tokens <= 200_000:
+        chunk = (
+            filler
+            + f"Batch {i}\n"
+            + ("-" * 40 + "\n") * 30
+        )
+        chunks.append(chunk)
+        total_tokens += count_tokens(chunk)
+        i += 1
+
+    result = "\n".join(chunks)
+
+    # Verify the final joined content, including separators.
+    while count_tokens(result) <= 200_000:
         chunks.append(filler + f"Batch {i}\n" + ("-" * 40 + "\n") * 30)
         i += 1
-    return "\n".join(chunks)
+        result = "\n".join(chunks)
+
+    return result
 
 
 def title_index(limit: int | None = 400) -> str:
